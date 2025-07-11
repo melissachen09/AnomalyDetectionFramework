@@ -1,0 +1,28 @@
+"""
+Requirements file for Anomaly Detection Framework.
+
+This file contains all Python dependencies needed for the project,
+including testing, database connectivity, and core functionality.
+"""
+
+# Core dependencies
+snowflake-connector-python>=3.0.0
+pandas>=1.5.0
+pyyaml>=6.0
+pydantic>=2.0.0
+
+# Testing dependencies
+pytest>=7.0.0
+pytest-cov>=4.0.0
+pytest-mock>=3.10.0
+
+# Development dependencies
+black>=22.0.0
+flake8>=6.0.0
+mypy>=1.0.0
+
+# Airflow dependencies (for production deployment)
+apache-airflow>=2.7.0
+
+# Docker support
+docker>=6.0.0
