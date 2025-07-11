@@ -22,6 +22,7 @@ from snowflake.connector import ProgrammingError, DatabaseError, OperationalErro
 from src.detection.utils.snowflake_connector import (
     SnowflakeConnector,
     SnowflakeConnectionPool,
+    SnowflakeConnectionFactory,
     SnowflakeConnectionError,
     SnowflakeTimeoutError,
     SnowflakeAuthenticationError
@@ -217,7 +218,7 @@ class TestSnowflakeConnectionPool(unittest.TestCase):
         
         self.assertEqual(pool.pool_size, 5)
         self.assertEqual(pool.max_connections, 10)
-        self.assertEqual(len(pool._available_connections), 5)
+        self.assertEqual(pool._available_connections.qsize(), 5)
 
     @patch('snowflake.connector.connect')
     def test_pool_connection_acquisition(self, mock_connect):
@@ -233,13 +234,13 @@ class TestSnowflakeConnectionPool(unittest.TestCase):
         # Acquire first connection
         conn1 = pool.get_connection()
         self.assertIsNotNone(conn1)
-        self.assertEqual(len(pool._available_connections), 2)
+        self.assertEqual(pool._available_connections.qsize(), 2)
         
         # Acquire second connection
         conn2 = pool.get_connection()
         self.assertIsNotNone(conn2)
         self.assertNotEqual(conn1, conn2)
-        self.assertEqual(len(pool._available_connections), 1)
+        self.assertEqual(pool._available_connections.qsize(), 1)
 
     @patch('snowflake.connector.connect')
     def test_pool_connection_return(self, mock_connect):
@@ -252,12 +253,12 @@ class TestSnowflakeConnectionPool(unittest.TestCase):
         )
         
         conn = pool.get_connection()
-        initial_available = len(pool._available_connections)
+        initial_available = pool._available_connections.qsize()
         
         pool.return_connection(conn)
         
         self.assertEqual(
-            len(pool._available_connections), 
+            pool._available_connections.qsize(), 
             initial_available + 1
         )
 
@@ -276,7 +277,7 @@ class TestSnowflakeConnectionPool(unittest.TestCase):
         conn1 = pool.get_connection()
         conn2 = pool.get_connection()
         
-        self.assertEqual(len(pool._available_connections), 0)
+        self.assertEqual(pool._available_connections.qsize(), 0)
         
         # Request additional connection - should create new one
         conn3 = pool.get_connection()
@@ -674,6 +675,219 @@ class TestSnowflakeThreadSafety(unittest.TestCase):
         self.assertLess(end_time - start_time, 10.0)
         
         pool.close()
+
+
+class TestSnowflakeConnectionFactory(unittest.TestCase):
+    """Test connection factory pattern implementation."""
+
+    def setUp(self):
+        """Set up test fixtures."""
+        self.valid_config = {
+            'account': 'test_account',
+            'user': 'test_user',
+            'password': 'test_password',
+            'warehouse': 'test_warehouse',
+            'database': 'test_database',
+            'schema': 'test_schema'
+        }
+        
+        # Reset factory singleton for clean test state
+        SnowflakeConnectionFactory._instance = None
+
+    def tearDown(self):
+        """Clean up after each test."""
+        # Clear factory cache if instance exists
+        try:
+            factory = SnowflakeConnectionFactory.get_instance()
+            factory.clear_cache()
+        except:
+            pass
+        
+        # Reset singleton
+        SnowflakeConnectionFactory._instance = None
+
+    @patch('snowflake.connector.connect')
+    def test_factory_singleton_pattern(self, mock_connect):
+        """Test factory implements singleton pattern correctly."""
+        mock_connect.return_value = Mock()
+        
+        # Get two instances of the factory
+        factory1 = SnowflakeConnectionFactory.get_instance()
+        factory2 = SnowflakeConnectionFactory.get_instance()
+        
+        # Should be the same instance
+        self.assertIs(factory1, factory2)
+
+    @patch('snowflake.connector.connect')
+    def test_factory_create_connector(self, mock_connect):
+        """Test factory creates connectors with proper configuration."""
+        mock_connect.return_value = Mock()
+        
+        factory = SnowflakeConnectionFactory.get_instance()
+        connector = factory.create_connector(self.valid_config)
+        
+        self.assertIsInstance(connector, SnowflakeConnector)
+        self.assertEqual(connector.config['account'], 'test_account')
+
+    @patch('snowflake.connector.connect')
+    def test_factory_create_connection_pool(self, mock_connect):
+        """Test factory creates connection pools with proper configuration."""
+        mock_connect.return_value = Mock()
+        
+        factory = SnowflakeConnectionFactory.get_instance()
+        pool = factory.create_connection_pool(
+            config=self.valid_config,
+            pool_size=5,
+            max_connections=15
+        )
+        
+        self.assertIsInstance(pool, SnowflakeConnectionPool)
+        self.assertEqual(pool.pool_size, 5)
+        self.assertEqual(pool.max_connections, 15)
+
+    @patch('snowflake.connector.connect')
+    def test_factory_connection_caching(self, mock_connect):
+        """Test factory caches connections by configuration hash."""
+        mock_connect.return_value = Mock()
+        
+        factory = SnowflakeConnectionFactory.get_instance()
+        
+        # Create two connectors with same config
+        connector1 = factory.create_connector(self.valid_config)
+        connector2 = factory.create_connector(self.valid_config.copy())
+        
+        # Should reuse cached configuration
+        self.assertEqual(len(factory._connector_cache), 1)
+
+    @patch('snowflake.connector.connect')
+    def test_factory_different_configs_different_connectors(self, mock_connect):
+        """Test factory creates different connectors for different configurations."""
+        mock_connect.return_value = Mock()
+        
+        factory = SnowflakeConnectionFactory.get_instance()
+        
+        config1 = self.valid_config.copy()
+        config2 = self.valid_config.copy()
+        config2['database'] = 'different_database'
+        
+        connector1 = factory.create_connector(config1)
+        connector2 = factory.create_connector(config2)
+        
+        # Should create separate connectors for different configs
+        self.assertEqual(len(factory._connector_cache), 2)
+        self.assertNotEqual(connector1.config['database'], connector2.config['database'])
+
+    @patch('snowflake.connector.connect')
+    def test_factory_pool_caching(self, mock_connect):
+        """Test factory caches connection pools by configuration."""
+        mock_connect.return_value = Mock()
+        
+        factory = SnowflakeConnectionFactory.get_instance()
+        
+        # Create two pools with same config
+        pool1 = factory.create_connection_pool(self.valid_config, pool_size=3)
+        pool2 = factory.create_connection_pool(self.valid_config, pool_size=3)
+        
+        # Should reuse cached pool
+        self.assertIs(pool1, pool2)
+
+    @patch('snowflake.connector.connect')
+    def test_factory_pool_different_sizes_different_pools(self, mock_connect):
+        """Test factory creates different pools for different pool sizes."""
+        mock_connect.return_value = Mock()
+        
+        factory = SnowflakeConnectionFactory.get_instance()
+        
+        pool1 = factory.create_connection_pool(self.valid_config, pool_size=3)
+        pool2 = factory.create_connection_pool(self.valid_config, pool_size=5)
+        
+        # Should create different pools for different sizes
+        self.assertIsNot(pool1, pool2)
+        self.assertEqual(pool1.pool_size, 3)
+        self.assertEqual(pool2.pool_size, 5)
+
+    def test_factory_cache_cleanup(self):
+        """Test factory can clean up cached connections and pools."""
+        factory = SnowflakeConnectionFactory.get_instance()
+        
+        # Add some mock entries to cache
+        factory._connector_cache['test_key'] = Mock()
+        factory._pool_cache['test_pool_key'] = Mock()
+        
+        # Clear caches
+        factory.clear_cache()
+        
+        self.assertEqual(len(factory._connector_cache), 0)
+        self.assertEqual(len(factory._pool_cache), 0)
+
+    @patch('snowflake.connector.connect')
+    def test_factory_thread_safety(self, mock_connect):
+        """Test factory operations are thread-safe."""
+        mock_connect.return_value = Mock()
+        
+        factory = SnowflakeConnectionFactory.get_instance()
+        results = {}
+        errors = {}
+        
+        def create_connector_thread(thread_id):
+            try:
+                config = self.valid_config.copy()
+                config['thread_id'] = thread_id  # Make each config unique
+                connector = factory.create_connector(config)
+                results[thread_id] = connector
+            except Exception as e:
+                errors[thread_id] = e
+        
+        # Create multiple threads
+        threads = []
+        for i in range(10):
+            thread = threading.Thread(target=create_connector_thread, args=(i,))
+            threads.append(thread)
+        
+        # Start all threads
+        for thread in threads:
+            thread.start()
+        
+        # Wait for completion
+        for thread in threads:
+            thread.join()
+        
+        # Verify results
+        self.assertEqual(len(results), 10)
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(len(factory._connector_cache), 10)
+
+    @patch('snowflake.connector.connect')
+    def test_factory_config_validation(self, mock_connect):
+        """Test factory validates configuration before creating connectors."""
+        mock_connect.return_value = Mock()
+        
+        factory = SnowflakeConnectionFactory.get_instance()
+        
+        invalid_config = {'invalid': 'config'}
+        
+        with self.assertRaises(ValueError):
+            factory.create_connector(invalid_config)
+
+    @patch('snowflake.connector.connect')
+    def test_factory_performance_tracking(self, mock_connect):
+        """Test factory tracks performance metrics."""
+        mock_connect.return_value = Mock()
+        
+        factory = SnowflakeConnectionFactory.get_instance()
+        
+        # Create some connectors and pools
+        factory.create_connector(self.valid_config)
+        factory.create_connection_pool(self.valid_config)
+        
+        metrics = factory.get_metrics()
+        
+        self.assertIn('connectors_created', metrics)
+        self.assertIn('pools_created', metrics)
+        self.assertIn('cache_hits', metrics)
+        self.assertIn('cache_misses', metrics)
+        self.assertEqual(metrics['connectors_created'], 1)
+        self.assertEqual(metrics['pools_created'], 1)
 
 
 if __name__ == '__main__':

@@ -14,6 +14,8 @@ Part of Epic ADF-4: Snowflake Integration Layer
 import logging
 import threading
 import time
+import hashlib
+import json
 from contextlib import contextmanager
 from queue import Queue, Empty
 from typing import Dict, Any, Optional, List
@@ -246,12 +248,11 @@ class SnowflakeConnectionPool:
         
         for i in range(self.pool_size):
             try:
-                with connector.get_connection() as conn:
-                    # Create a new connection for the pool
-                    connection = connector._create_connection()
-                    self._available_connections.put(connection)
-                    self._all_connections.append(connection)
-                    logger.debug("Created initial connection %d/%d", i + 1, self.pool_size)
+                # Create a new connection for the pool
+                connection = connector._create_connection()
+                self._available_connections.put(connection)
+                self._all_connections.append(connection)
+                logger.debug("Created initial connection %d/%d", i + 1, self.pool_size)
             except Exception as e:
                 logger.error("Failed to create initial connection %d: %s", i + 1, e)
                 # Continue with fewer connections if some fail
@@ -407,6 +408,262 @@ class SnowflakeConnectionPool:
                 'available_connections': self._available_connections.qsize(),
                 'max_connections': self.max_connections
             }
+
+
+class SnowflakeConnectionFactory:
+    """
+    Factory class for creating and managing Snowflake connectors and connection pools.
+    
+    Implements singleton pattern with caching to optimize resource usage
+    and provides centralized configuration management.
+    """
+    
+    _instance = None
+    _lock = threading.RLock()
+    
+    def __new__(cls):
+        """Ensure singleton pattern implementation."""
+        with cls._lock:
+            if cls._instance is None:
+                cls._instance = super().__new__(cls)
+            return cls._instance
+    
+    def __init__(self):
+        """Initialize factory with caching and metrics tracking."""
+        if hasattr(self, '_initialized'):
+            return
+        
+        self._connector_cache = {}
+        self._pool_cache = {}
+        self._cache_lock = threading.RLock()
+        
+        # Performance metrics
+        self._metrics = {
+            'connectors_created': 0,
+            'pools_created': 0,
+            'cache_hits': 0,
+            'cache_misses': 0
+        }
+        self._metrics_lock = threading.RLock()
+        
+        self._initialized = True
+        logger.info("SnowflakeConnectionFactory initialized")
+    
+    @classmethod
+    def get_instance(cls):
+        """Get singleton instance of the factory."""
+        return cls()
+    
+    def _generate_config_hash(self, config: Dict[str, Any], extra_params: Optional[Dict[str, Any]] = None) -> str:
+        """
+        Generate a unique hash for configuration to use as cache key.
+        
+        Args:
+            config: Connection configuration
+            extra_params: Additional parameters for cache key generation
+            
+        Returns:
+            Unique hash string for the configuration
+        """
+        # Create a normalized config for hashing
+        normalized_config = config.copy()
+        
+        # Add extra parameters if provided
+        if extra_params:
+            normalized_config.update(extra_params)
+        
+        # Sort keys for consistent hashing
+        config_str = json.dumps(normalized_config, sort_keys=True)
+        return hashlib.md5(config_str.encode()).hexdigest()
+    
+    def create_connector(self, config: Dict[str, Any]) -> SnowflakeConnector:
+        """
+        Create or retrieve cached Snowflake connector.
+        
+        Args:
+            config: Connection configuration dictionary
+            
+        Returns:
+            SnowflakeConnector instance
+            
+        Raises:
+            ValueError: If configuration is invalid
+        """
+        # Validate configuration first
+        temp_connector = SnowflakeConnector(config)
+        
+        config_hash = self._generate_config_hash(config)
+        
+        with self._cache_lock:
+            # Check cache first
+            if config_hash in self._connector_cache:
+                with self._metrics_lock:
+                    self._metrics['cache_hits'] += 1
+                logger.debug("Retrieved connector from cache: %s", config_hash[:8])
+                return self._connector_cache[config_hash]
+            
+            # Create new connector
+            connector = SnowflakeConnector(config)
+            self._connector_cache[config_hash] = connector
+            
+            with self._metrics_lock:
+                self._metrics['cache_misses'] += 1
+                self._metrics['connectors_created'] += 1
+            
+            logger.info("Created new connector: %s", config_hash[:8])
+            return connector
+    
+    def create_connection_pool(self, config: Dict[str, Any], pool_size: int = 5, 
+                             max_connections: int = 20, timeout: float = 30.0) -> SnowflakeConnectionPool:
+        """
+        Create or retrieve cached Snowflake connection pool.
+        
+        Args:
+            config: Connection configuration dictionary
+            pool_size: Initial number of connections
+            max_connections: Maximum number of connections
+            timeout: Connection acquisition timeout
+            
+        Returns:
+            SnowflakeConnectionPool instance
+        """
+        # Include pool parameters in cache key
+        pool_params = {
+            'pool_size': pool_size,
+            'max_connections': max_connections,
+            'timeout': timeout
+        }
+        
+        config_hash = self._generate_config_hash(config, pool_params)
+        
+        with self._cache_lock:
+            # Check cache first
+            if config_hash in self._pool_cache:
+                with self._metrics_lock:
+                    self._metrics['cache_hits'] += 1
+                logger.debug("Retrieved connection pool from cache: %s", config_hash[:8])
+                return self._pool_cache[config_hash]
+            
+            # Create new pool
+            pool = SnowflakeConnectionPool(
+                config=config,
+                pool_size=pool_size,
+                max_connections=max_connections,
+                timeout=timeout
+            )
+            self._pool_cache[config_hash] = pool
+            
+            with self._metrics_lock:
+                self._metrics['cache_misses'] += 1
+                self._metrics['pools_created'] += 1
+            
+            logger.info("Created new connection pool: %s", config_hash[:8])
+            return pool
+    
+    def get_or_create_connector(self, config: Dict[str, Any]) -> SnowflakeConnector:
+        """
+        Convenience method to get or create a connector.
+        
+        Args:
+            config: Connection configuration dictionary
+            
+        Returns:
+            SnowflakeConnector instance
+        """
+        return self.create_connector(config)
+    
+    def get_or_create_pool(self, config: Dict[str, Any], **pool_kwargs) -> SnowflakeConnectionPool:
+        """
+        Convenience method to get or create a connection pool.
+        
+        Args:
+            config: Connection configuration dictionary
+            **pool_kwargs: Additional pool configuration parameters
+            
+        Returns:
+            SnowflakeConnectionPool instance
+        """
+        return self.create_connection_pool(config, **pool_kwargs)
+    
+    def clear_cache(self):
+        """Clear all cached connectors and pools."""
+        with self._cache_lock:
+            # Close all cached pools first
+            for pool in self._pool_cache.values():
+                try:
+                    pool.close()
+                except Exception as e:
+                    logger.warning("Error closing cached pool: %s", e)
+            
+            # Clear caches
+            self._connector_cache.clear()
+            self._pool_cache.clear()
+            
+            logger.info("Factory cache cleared")
+    
+    def get_cache_stats(self) -> Dict[str, int]:
+        """
+        Get current cache statistics.
+        
+        Returns:
+            Dictionary with cache statistics
+        """
+        with self._cache_lock:
+            return {
+                'connector_cache_size': len(self._connector_cache),
+                'pool_cache_size': len(self._pool_cache)
+            }
+    
+    def get_metrics(self) -> Dict[str, int]:
+        """
+        Get factory performance metrics.
+        
+        Returns:
+            Dictionary with performance metrics
+        """
+        with self._metrics_lock:
+            metrics = self._metrics.copy()
+        
+        # Add cache statistics
+        cache_stats = self.get_cache_stats()
+        metrics.update(cache_stats)
+        
+        return metrics
+    
+    def invalidate_cache_entry(self, config: Dict[str, Any]):
+        """
+        Invalidate a specific cache entry.
+        
+        Args:
+            config: Configuration to invalidate from cache
+        """
+        config_hash = self._generate_config_hash(config)
+        
+        with self._cache_lock:
+            if config_hash in self._connector_cache:
+                del self._connector_cache[config_hash]
+                logger.debug("Invalidated connector cache entry: %s", config_hash[:8])
+            
+            # Also check pool cache (need to check all entries since pool configs include extra params)
+            pools_to_remove = []
+            for pool_hash, pool in self._pool_cache.items():
+                if pool_hash.startswith(config_hash):  # Basic check for related pools
+                    pools_to_remove.append(pool_hash)
+            
+            for pool_hash in pools_to_remove:
+                pool = self._pool_cache.pop(pool_hash)
+                try:
+                    pool.close()
+                except Exception as e:
+                    logger.warning("Error closing invalidated pool: %s", e)
+                logger.debug("Invalidated pool cache entry: %s", pool_hash[:8])
+
+    def __del__(self):
+        """Cleanup when factory is destroyed."""
+        try:
+            self.clear_cache()
+        except Exception as e:
+            logger.warning("Error during factory cleanup: %s", e)
 
 
 class SnowflakeDetectorBase:
