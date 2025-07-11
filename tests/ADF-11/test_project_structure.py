@@ -15,7 +15,7 @@ class TestProjectStructure(unittest.TestCase):
 
     def setUp(self):
         """Set up test with project root path."""
-        self.project_root = Path(__file__).parent.parent
+        self.project_root = Path(__file__).parent.parent.parent
 
     def test_src_directory_exists(self):
         """Test that /src directory exists."""
