@@ -21,8 +21,8 @@ if [ -z "$1" ]; then
     echo "Usage: $0 <branch-name> [story-id] [worktree-name]"
     echo "       $0 <branch-name> [worktree-name]"
     echo "Examples:"
-    echo "  $0 feature/STORY-4-testing STORY-4"
-    echo "  $0 cr/STORY-4 STORY-4"
+    echo "  $0 feature/ADF-4-testing ADF-4"
+    echo "  $0 cr/ADF-4 ADF-4"
     echo "  $0 feature/auth-improvements auth-review"
     exit 1
 fi

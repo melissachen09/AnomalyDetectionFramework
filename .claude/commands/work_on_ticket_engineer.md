@@ -8,9 +8,9 @@ You're working on $ARGUMENTS that you can find information about in JIRA using t
 
 This workflow uses the Atlassian MCP integration with the following project-specific configuration:
 
-**Organization**: dotfun.atlassian.net
-**Cloud ID**: `840697aa-7447-4ad1-bd0e-3f528d107624`
-**Project Key**: `STORY` (Storybooks project)
+**Organization**: yqm0nk3y1.atlassian.net
+**Cloud ID**: `5c7e1404-fb71-4e23-b0e7-5a45d3c7db8c`
+**Project Key**: `ADF` (AnomalyDetectionFramework  project)
 **Issue Types**: Epic, Story, Task, Bug, Subtask
 
 ### Common JIRA Status Transitions
@@ -18,8 +18,7 @@ This workflow uses the Atlassian MCP integration with the following project-spec
 The Storybooks project uses these status transitions:
 
 - **To Do** → **In Progress** (start work)
-- **In Progress** → **Code Review** (PR created)
-- **Any Status** → **Blocked** (when blocked)
+- **In Progress** → **Review** (PR created)
 
 Note: Always fetch available transitions first as IDs may vary.
 
