@@ -29,8 +29,8 @@ This workflow ensures consistent, high-quality development by following TDD prac
 ## Initial Setup and Context Loading
 
 1. Read .claude/commands/prime.md and execute all commands.
-1. Stash anything that's in the workspace. Then, pull the latest version of `main` from github
-1. **Fetch and Analyze JIRA Ticket**
+2. Stash anything that's in the workspace. Then, pull the latest version of `main` from github
+3. **Fetch and Analyze JIRA Ticket**
 
    Key information to extract:
 
@@ -44,7 +44,7 @@ This workflow ensures consistent, high-quality development by following TDD prac
 
    IF this ticket has subasks THEN work on each of the subtasks in the most efficient order, sequentially, one subtask at a time.
 
-1. **Update JIRA Status** First get available transitions, then move the ticket to "In Progress" status.
+4. **Update JIRA Status** First get available transitions, then move the ticket to "In Progress" status.
 
 ## Related Issues and Dependencies
 
