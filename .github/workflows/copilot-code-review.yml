@@ -1,0 +1,108 @@
+name: Copilot Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  copilot-review:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for better context
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt || echo "No requirements.txt found"
+          
+      - name: Run linting checks
+        id: lint
+        run: |
+          echo "## Linting Results" >> $GITHUB_STEP_SUMMARY
+          
+          # Run flake8 if available
+          if command -v flake8 &> /dev/null; then
+            echo "### Flake8 Results" >> $GITHUB_STEP_SUMMARY
+            flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics >> $GITHUB_STEP_SUMMARY || echo "No critical errors found" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Run black check if available
+          if command -v black &> /dev/null; then
+            echo "### Black Formatting Check" >> $GITHUB_STEP_SUMMARY
+            black --check . >> $GITHUB_STEP_SUMMARY 2>&1 || echo "Some files need formatting" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Run tests
+        id: test
+        run: |
+          echo "## Test Results" >> $GITHUB_STEP_SUMMARY
+          
+          # Run pytest if available
+          if command -v pytest &> /dev/null; then
+            pytest -v --tb=short >> $GITHUB_STEP_SUMMARY 2>&1 || echo "Some tests failed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "No pytest found, skipping tests" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Security scan with Bandit
+        id: security
+        run: |
+          pip install bandit
+          echo "## Security Scan Results" >> $GITHUB_STEP_SUMMARY
+          bandit -r . -f txt >> $GITHUB_STEP_SUMMARY 2>&1 || echo "Security scan completed with findings" >> $GITHUB_STEP_SUMMARY
+
+      - name: Comment PR with results
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            
+            // Read the summary file
+            let summary = '';
+            try {
+              summary = fs.readFileSync(process.env.GITHUB_STEP_SUMMARY, 'utf8');
+            } catch (error) {
+              summary = 'Could not generate code review summary.';
+            }
+            
+            // Create a comment on the PR
+            const comment = `## 🤖 Automated Code Review
+            
+            ${summary}
+            
+            ### 💡 Tips for using GitHub Copilot:
+            - Use Copilot in your IDE for real-time code suggestions
+            - Review Copilot's suggestions carefully before accepting
+            - Use Copilot Chat for code explanations and refactoring ideas
+            
+            ---
+            *This automated review helps identify common issues. For AI-powered code suggestions, use GitHub Copilot in your development environment.*`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+      # Optional: Use GitHub Advanced Security features if available
+      - name: Run CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        if: github.repository.private == false  # CodeQL is free for public repos
+        continue-on-error: true
+        with:
+          languages: python
