@@ -22,6 +22,7 @@ READ:
 - specs/code-standards.md
 - specs/project_plan.md
 - specs/anomaly-detection-design-doc.md
+- specs/work_plan.md
 
 Always use conventional commits
 Always create PR before making changes 

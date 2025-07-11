@@ -34,6 +34,7 @@ claude-template/
 │   ├── code-standards.md      # Universal code standards and best practices
 │   ├── project-management.md  # AI-assisted project management system
 │   └── project_plan.md        # Master project overview with JIRA references
+│   └── work_plan.md           # project epics and tasks in JIRA 
 ├── .gitignore                 # Git ignore rules
 ├── .mcp.json                  # MCP server configuration (local only)
 ├── CLAUDE.md                  # Claude-specific documentation
@@ -94,6 +95,7 @@ This will give you:
 - `specs/project_plan.md` - Master project overview with JIRA project references
 - `specs/code-standards.md` - Universal code standards and best practices
 - `specs/project-management.md` - AI-assisted project management system with hierarchical specs
+- `specs/work_plan.md` - AI-assisted JIRA epics and tasks
 - **JIRA Issues** (via MCP) - Epics, Stories, Tasks, and Sub-tasks managed in JIRA
 
 ### Project Files
@@ -152,6 +154,7 @@ This template includes a comprehensive AI-assisted project management system int
 - `ai_docs/jira-and-confluence-tool-use.md` - JIRA MCP setup and conventions
 - `specs/project_plan.md` - Always loaded by `/prime` command with JIRA references
 - `specs/code-standards.md` - Universal code standards and best practices
+- `specs/work_plan.md` - AI-assisted JIRA epics and tasks
 
 ### Claude Code Integration
 

@@ -2,11 +2,11 @@
 
 # Script to set up multiple git worktrees for parallel development
 # Usage: 
-#   ./scripts/setup-worktree-batch.sh <story-ids...>
+#   ./scripts/setup-worktree-batch.sh <adf-ids...>
 #   ./scripts/setup-worktree-batch.sh <config.json>
 # Examples:
-#   ./scripts/setup-worktree-batch.sh STORY-4 STORY-5 STORY-6
-#   ./scripts/setup-worktree-batch.sh worktree-batch-story-4.json
+#   ./scripts/setup-worktree-batch.sh ADF-4 ADF-5 ADF-6
+#   ./scripts/setup-worktree-batch.sh worktree-batch-adf-4.json
 
 set -e
 
