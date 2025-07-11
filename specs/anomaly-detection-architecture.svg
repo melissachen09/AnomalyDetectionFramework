@@ -1,0 +1,107 @@
+<svg viewBox="0 0 1400 900" xmlns="http://www.w3.org/2000/svg">
+  <!-- Title -->
+  <text x="700" y="30" text-anchor="middle" font-size="24" font-weight="bold">GroupStats Anomaly Detection Framework (Simplified)</text>
+  
+  <!-- Data Sources Layer -->
+  <rect x="50" y="80" width="1300" height="100" fill="#E8F4FD" stroke="#2196F3" stroke-width="2" rx="10"/>
+  <text x="700" y="110" text-anchor="middle" font-size="16" font-weight="bold">Data Sources (Existing)</text>
+  
+  <rect x="200" y="120" width="250" height="40" fill="#BBDEFB" stroke="#1976D2" stroke-width="2" rx="5"/>
+  <text x="325" y="145" text-anchor="middle" font-size="14">GroupStats Events (Raw)</text>
+  
+  <rect x="500" y="120" width="250" height="40" fill="#BBDEFB" stroke="#1976D2" stroke-width="2" rx="5"/>
+  <text x="625" y="145" text-anchor="middle" font-size="14">ELT Process (Existing)</text>
+  
+  <rect x="800" y="120" width="300" height="40" fill="#BBDEFB" stroke="#1976D2" stroke-width="2" rx="5"/>
+  <text x="950" y="145" text-anchor="middle" font-size="14">Snowflake Tables (Listing Stats, UTM)</text>
+  
+  <!-- Core Processing Layer -->
+  <rect x="50" y="210" width="1300" height="180" fill="#F3E5F5" stroke="#9C27B0" stroke-width="2" rx="10"/>
+  <text x="700" y="240" text-anchor="middle" font-size="16" font-weight="bold">Anomaly Detection Layer (Airflow + Docker)</text>
+  
+  <!-- Config Management -->
+  <rect x="100" y="260" width="300" height="100" fill="#E1BEE7" stroke="#7B1FA2" stroke-width="2" rx="5"/>
+  <text x="250" y="285" text-anchor="middle" font-size="14" font-weight="bold">Config Management</text>
+  <text x="250" y="310" text-anchor="middle" font-size="12">• Event Type Registry (Snowflake)</text>
+  <text x="250" y="330" text-anchor="middle" font-size="12">• Detection Rules (YAML/JSON)</text>
+  <text x="250" y="350" text-anchor="middle" font-size="12">• Stakeholder Mapping</text>
+  
+  <!-- Detection Orchestrator -->
+  <rect x="450" y="260" width="300" height="100" fill="#E1BEE7" stroke="#7B1FA2" stroke-width="2" rx="5"/>
+  <text x="600" y="285" text-anchor="middle" font-size="14" font-weight="bold">Detection Orchestrator</text>
+  <text x="600" y="310" text-anchor="middle" font-size="12">• Airflow DAGs</text>
+  <text x="600" y="330" text-anchor="middle" font-size="12">• Plugin Execution</text>
+  <text x="600" y="350" text-anchor="middle" font-size="12">• Result Aggregation</text>
+  
+  <!-- Metadata Store -->
+  <rect x="800" y="260" width="300" height="100" fill="#E1BEE7" stroke="#7B1FA2" stroke-width="2" rx="5"/>
+  <text x="950" y="285" text-anchor="middle" font-size="14" font-weight="bold">Results Storage</text>
+  <text x="950" y="310" text-anchor="middle" font-size="12">• Anomaly History (Snowflake)</text>
+  <text x="950" y="330" text-anchor="middle" font-size="12">• Detection Metrics</text>
+  <text x="950" y="350" text-anchor="middle" font-size="12">• Alert Log</text>
+ 
+  <!-- Detection Plugins Layer -->
+  <rect x="50" y="420" width="1300" height="120" fill="#E8F5E9" stroke="#4CAF50" stroke-width="2" rx="10"/>
+  <text x="700" y="450" text-anchor="middle" font-size="16" font-weight="bold">Detection Plugins (Python)</text>
+  
+  <rect x="100" y="470" width="200" height="50" fill="#C8E6C9" stroke="#388E3C" stroke-width="2" rx="5"/>
+  <text x="200" y="490" text-anchor="middle" font-size="12" font-weight="bold">Rule-Based</text>
+  <text x="200" y="510" text-anchor="middle" font-size="11">Threshold/Spike</text>
+  
+  <rect x="350" y="470" width="200" height="50" fill="#C8E6C9" stroke="#388E3C" stroke-width="2" rx="5"/>
+  <text x="450" y="490" text-anchor="middle" font-size="12" font-weight="bold">Statistical</text>
+  <text x="450" y="510" text-anchor="middle" font-size="11">Z-Score/IQR</text>
+  
+  <rect x="600" y="470" width="200" height="50" fill="#C8E6C9" stroke="#388E3C" stroke-width="2" rx="5"/>
+  <text x="700" y="490" text-anchor="middle" font-size="12" font-weight="bold">Elementary</text>
+  <text x="700" y="510" text-anchor="middle" font-size="11">Data Quality Tests</text>
+  
+  <rect x="850" y="470" width="200" height="50" fill="#C8E6C9" stroke="#388E3C" stroke-width="2" rx="5"/>
+  <text x="950" y="490" text-anchor="middle" font-size="12" font-weight="bold">dbt Tests</text>
+  <text x="950" y="510" text-anchor="middle" font-size="11">SQL-based Checks</text>
+  
+  <rect x="1100" y="470" width="200" height="50" fill="#C8E6C9" stroke="#388E3C" stroke-width="2" rx="5"/>
+  <text x="1200" y="490" text-anchor="middle" font-size="12" font-weight="bold">ML Models</text>
+  <text x="1200" y="510" text-anchor="middle" font-size="11">Prophet/Isolation</text>
+  
+  <!-- Alert & Notification Layer -->
+  <rect x="50" y="570" width="1300" height="120" fill="#FFF3E0" stroke="#FF9800" stroke-width="2" rx="10"/>
+  <text x="700" y="600" text-anchor="middle" font-size="16" font-weight="bold">Alert &amp; Notification Layer</text>
+  
+  <rect x="200" y="620" width="250" height="50" fill="#FFE0B2" stroke="#F57C00" stroke-width="2" rx="5"/>
+  <text x="325" y="640" text-anchor="middle" font-size="14" font-weight="bold">Alert Classification</text>
+  <text x="325" y="660" text-anchor="middle" font-size="12">Critical/High/Warning</text>
+  
+  <rect x="500" y="620" width="250" height="50" fill="#FFE0B2" stroke="#F57C00" stroke-width="2" rx="5"/>
+  <text x="625" y="640" text-anchor="middle" font-size="14" font-weight="bold">Alert Aggregation</text>
+  <text x="625" y="660" text-anchor="middle" font-size="12">Dedup &amp; Throttling</text>
+  
+  <rect x="800" y="620" width="250" height="50" fill="#FFE0B2" stroke="#F57C00" stroke-width="2" rx="5"/>
+  <text x="925" y="640" text-anchor="middle" font-size="14" font-weight="bold">Notification Router</text>
+  <text x="925" y="660" text-anchor="middle" font-size="12">Email &amp; Slack</text>
+  
+  <!-- Output Layer -->
+  <rect x="50" y="720" width="1300" height="120" fill="#FFEBEE" stroke="#F44336" stroke-width="2" rx="10"/>
+  <text x="700" y="750" text-anchor="middle" font-size="16" font-weight="bold">Output Channels</text>
+  
+  <rect x="250" y="770" width="300" height="50" fill="#FFCDD2" stroke="#D32F2F" stroke-width="2" rx="5"/>
+  <text x="400" y="800" text-anchor="middle" font-size="14">Snowflake Email Function</text>
+  
+  <rect x="600" y="770" width="300" height="50" fill="#FFCDD2" stroke="#D32F2F" stroke-width="2" rx="5"/>
+  <text x="750" y="800" text-anchor="middle" font-size="14">Slack Webhooks</text>
+  
+  <rect x="950" y="770" width="300" height="50" fill="#FFCDD2" stroke="#D32F2F" stroke-width="2" rx="5"/>
+  <text x="1100" y="800" text-anchor="middle" font-size="14">Snowflake Dashboard</text>
+  
+  <!-- Data flow arrows -->
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#333" />
+    </marker>
+  </defs>
+  
+  <line x1="700" y1="180" x2="700" y2="210" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <line x1="700" y1="390" x2="700" y2="420" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <line x1="700" y1="540" x2="700" y2="570" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <line x1="700" y1="690" x2="700" y2="720" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)"/>
+</svg>

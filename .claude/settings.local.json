@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find:*)",
+      "Bash(claude mcp:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
+    ],
+    "deny": []
+  }
+}
