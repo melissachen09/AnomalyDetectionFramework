@@ -1,0 +1,41 @@
+# Anomaly Detection Framework Dependencies
+
+# Core Framework
+pydantic>=2.0.0
+pyyaml>=6.0
+python-dateutil>=2.8.0
+
+# Data Processing
+pandas>=1.5.0
+numpy>=1.24.0
+
+# Database Connectivity
+snowflake-connector-python>=3.0.0
+
+# Testing Framework
+pytest>=7.0.0
+pytest-cov>=4.0.0
+pytest-mock>=3.10.0
+
+# Code Quality
+black>=23.0.0
+flake8>=6.0.0
+mypy>=1.0.0
+
+# Logging and Monitoring
+structlog>=23.0.0
+
+# Configuration Management
+python-dotenv>=1.0.0
+
+# Airflow Integration (for orchestration)
+apache-airflow>=2.7.0
+
+# Container Support
+docker>=6.0.0
+
+# HTTP Requests (for Slack integration)
+requests>=2.28.0
+
+# Template Engine (for notifications)
+jinja2>=3.1.0
