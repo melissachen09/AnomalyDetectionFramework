@@ -1,0 +1,62 @@
+"""
+Example configuration for dbt Test Detector.
+
+This YAML configuration shows how to configure the DbtTestDetector
+for data quality monitoring in the Anomaly Detection Framework.
+"""
+
+event_config:
+  name: "dbt_data_quality_tests"
+  
+  # Data source configuration (not used by dbt detector)
+  data_source:
+    type: "dbt_tests"
+    description: "Data quality tests via dbt"
+  
+  # Detection configuration
+  detection:
+    daily_checks:
+      - detector: "dbt_test"
+        name: "all_dbt_tests"
+        project_dir: "/opt/dbt/data_quality_project"
+        profiles_dir: "/opt/dbt/profiles"
+        timeout: 600  # 10 minutes
+        log_level: "info"
+        
+      - detector: "dbt_test"
+        name: "critical_tests_only"
+        project_dir: "/opt/dbt/data_quality_project"
+        profiles_dir: "/opt/dbt/profiles"
+        selection: "tag:critical"
+        timeout: 300  # 5 minutes
+        log_level: "warn"
+        
+      - detector: "dbt_test"
+        name: "listing_data_tests"
+        project_dir: "/opt/dbt/data_quality_project"
+        profiles_dir: "/opt/dbt/profiles" 
+        selection: "models:listing*"
+        timeout: 900  # 15 minutes
+        log_level: "info"
+  
+  # Alerting configuration
+  alerting:
+    critical:
+      condition: "status == 'fail' and failures > 0"
+      recipients:
+        email: ["data-team@company.com", "director-bi@company.com"]
+        slack:
+          channel: "#data-alerts"
+          webhook_url: "${SLACK_WEBHOOK_CRITICAL}"
+    
+    warning:
+      condition: "status == 'error' or (status == 'fail' and failures <= 5)"
+      recipients:
+        slack:
+          channel: "#data-monitoring"
+          webhook_url: "${SLACK_WEBHOOK_WARNING}"
+    
+    info:
+      condition: "status == 'pass'"
+      recipients:
+        dashboard_only: true
