@@ -22,6 +22,7 @@ from pathlib import Path
 
 # Import the base detector and related functionality
 from src.detection.detectors.base_detector import BaseDetector, DetectionResult, register_detector
+from src.detection.plugin_manager import PluginManager
 
 
 class MockDetectorForTesting(BaseDetector):
@@ -77,50 +78,6 @@ class SlowMockDetector(BaseDetector):
         time.sleep(self.detection_time)
         return []
 
-
-# Since PluginManager doesn't exist yet, we'll create a minimal interface for testing
-class PluginManager:
-    """
-    Plugin manager for anomaly detection framework.
-    
-    This is a test-driven design class that will be implemented based on these tests.
-    """
-    
-    def __init__(self, plugin_dirs: List[str] = None):
-        """Initialize plugin manager with optional plugin directories."""
-        pass
-    
-    def discover_plugins(self) -> Dict[str, type]:
-        """Discover and return available plugins."""
-        pass
-    
-    def load_plugin(self, name: str) -> bool:
-        """Load a specific plugin by name."""
-        pass
-    
-    def unload_plugin(self, name: str) -> bool:
-        """Unload a specific plugin by name."""
-        pass
-    
-    def get_loaded_plugins(self) -> Dict[str, Any]:
-        """Get all currently loaded plugins."""
-        pass
-    
-    def execute_plugin(self, name: str, config: Dict[str, Any], start_date: date, end_date: date) -> List[DetectionResult]:
-        """Execute a plugin with given configuration."""
-        pass
-    
-    def execute_plugins_parallel(self, plugin_configs: List[Dict[str, Any]], start_date: date, end_date: date) -> Dict[str, List[DetectionResult]]:
-        """Execute multiple plugins in parallel."""
-        pass
-    
-    def reload_plugins(self) -> bool:
-        """Reload all plugins (hot reload)."""
-        pass
-    
-    def get_plugin_health(self, name: str) -> Dict[str, Any]:
-        """Get health status of a plugin."""
-        pass
 
 
 class TestPluginManagerDiscovery:
@@ -245,9 +202,15 @@ class TestPluginManagerLifecycle:
         with patch('src.detection.detectors.base_detector._DETECTOR_REGISTRY', mock_registry):
             manager = PluginManager()
             
-            # Should handle initialization failures gracefully
-            result = manager.load_plugin('failing_detector')
-            assert result is False
+            # Mock the detector to fail during initialization by patching the class
+            original_init = FailingMockDetector.__init__
+            def failing_init(self, config):
+                raise ValueError("Initialization failure")
+            
+            with patch.object(FailingMockDetector, '__init__', failing_init):
+                # Should handle initialization failures gracefully
+                result = manager.load_plugin('failing_detector')
+                assert result is False
     
     def test_unload_plugin_success(self):
         """Test successful plugin unloading."""
@@ -468,8 +431,14 @@ class TestPluginManagerErrorIsolation:
             # Load good plugin first
             assert manager.load_plugin('good_detector') is True
             
-            # Try to load bad plugin (should fail)
-            assert manager.load_plugin('bad_detector') is False
+            # Mock the bad detector to fail during initialization
+            original_init = FailingMockDetector.__init__
+            def failing_init(self, config):
+                raise ValueError("Initialization failure")
+            
+            with patch.object(FailingMockDetector, '__init__', failing_init):
+                # Try to load bad plugin (should fail)
+                assert manager.load_plugin('bad_detector') is False
             
             # Good plugin should still be loaded and functional
             loaded_plugins = manager.get_loaded_plugins()
