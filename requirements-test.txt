@@ -1,0 +1,47 @@
+# Development and Testing Dependencies
+# Core testing framework
+pytest>=7.0.0
+pytest-cov>=4.0.0
+pytest-mock>=3.10.0
+pytest-xdist>=3.0.0  # For parallel test execution
+pytest-html>=3.1.0   # For HTML test reports
+
+# YAML processing
+PyYAML>=6.0
+pyyaml-include>=1.3.0
+
+# Data validation
+pydantic>=2.0.0
+
+# Performance testing
+psutil>=5.9.0  # For memory usage monitoring
+memory-profiler>=0.60.0
+
+# Database connectivity (for integration tests)
+snowflake-connector-python>=3.0.0
+
+# Utilities
+python-dotenv>=1.0.0
+pathlib2>=2.3.0; python_version<"3.4"
+
+# Development tools
+black>=22.0.0
+flake8>=5.0.0
+mypy>=1.0.0
+isort>=5.10.0
+
+# Airflow (for integration testing)
+apache-airflow>=2.7.0
+
+# Docker SDK (for container testing)
+docker>=6.0.0
+
+# Concurrent processing
+concurrent-futures>=3.1.1; python_version<"3.2"
+
+# Timing utilities
+pytest-benchmark>=4.0.0
+
+# Fixtures and factories
+factory-boy>=3.2.0
+Faker>=18.0.0
