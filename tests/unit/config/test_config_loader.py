@@ -20,8 +20,8 @@ from pathlib import Path
 from unittest.mock import patch, mock_open, MagicMock
 from typing import Dict, List, Any
 
-# Import the configuration loader (to be implemented)
-# from src.detection.config.loader import ConfigLoader, ConfigLoaderError
+# Import the configuration loader
+from src.detection.config.loader import ConfigLoader, ConfigLoaderError
 
 
 class TestConfigLoaderFileSystemOperations:
@@ -69,16 +69,15 @@ class TestConfigLoaderFileSystemOperations:
         config_file = self.create_valid_config_file("test_config.yaml", config_content)
         
         # Act
-        # loader = ConfigLoader()
-        # result = loader.load_single_config(str(config_file))
+        loader = ConfigLoader()
+        result = loader.load_single_config(str(config_file))
         
         # Assert
-        # assert result is not None
-        # assert result.event_config.name == "test_event"
-        # assert result.event_config.data_source.table == "TEST_TABLE"
-        
-        # Placeholder assertion for test structure
-        assert config_file.exists()
+        assert result is not None
+        assert result.event_config.name == "test_event"
+        assert result.event_config.data_source["table"] == "TEST_TABLE"
+        assert result.file_path == str(config_file)
+        assert result.load_time > 0
     
     def test_load_multiple_config_files_from_directory(self):
         """Test bulk loading of multiple configuration files from a directory."""
@@ -94,18 +93,15 @@ class TestConfigLoaderFileSystemOperations:
             config_files.append(self.create_valid_config_file(filename, content))
         
         # Act
-        # loader = ConfigLoader()
-        # results = loader.load_configs_from_directory(str(self.config_dir))
+        loader = ConfigLoader()
+        results = loader.load_configs_from_directory(str(self.config_dir))
         
         # Assert
-        # assert len(results) == 3
-        # event_names = [config.event_config.name for config in results]
-        # assert "event1" in event_names
-        # assert "event2" in event_names
-        # assert "event3" in event_names
-        
-        # Placeholder assertion for test structure
-        assert len(config_files) == 3
+        assert len(results) == 3
+        event_names = [config.event_config.name for config in results]
+        assert "event1" in event_names
+        assert "event2" in event_names
+        assert "event3" in event_names
     
     def test_load_configs_with_glob_pattern(self):
         """Test loading configurations using glob patterns."""
@@ -115,18 +111,15 @@ class TestConfigLoaderFileSystemOperations:
         self.create_valid_config_file("dev_event1.yaml", {"event_config": {"name": "dev1"}})
         
         # Act
-        # loader = ConfigLoader()
-        # prod_configs = loader.load_configs_with_pattern(str(self.config_dir), "prod_*.yaml")
+        loader = ConfigLoader()
+        prod_configs = loader.load_configs_with_pattern(str(self.config_dir), "prod_*.yaml")
         
         # Assert
-        # assert len(prod_configs) == 2
-        # prod_names = [config.event_config.name for config in prod_configs]
-        # assert "prod1" in prod_names
-        # assert "prod2" in prod_names
-        # assert "dev1" not in prod_names
-        
-        # Placeholder assertion for test structure
-        assert (self.config_dir / "prod_event1.yaml").exists()
+        assert len(prod_configs) == 2
+        prod_names = [config.event_config.name for config in prod_configs]
+        assert "prod1" in prod_names
+        assert "prod2" in prod_names
+        assert "dev1" not in prod_names
     
     def test_recursive_directory_scanning(self):
         """Test recursive scanning of nested directories."""
@@ -377,12 +370,9 @@ class TestConfigLoaderErrorHandling:
         non_existent_file = self.config_dir / "does_not_exist.yaml"
         
         # Act & Assert
-        # loader = ConfigLoader()
-        # with pytest.raises(ConfigLoaderError, match="Configuration file not found"):
-        #     loader.load_single_config(str(non_existent_file))
-        
-        # Placeholder assertion for test structure
-        assert not non_existent_file.exists()
+        loader = ConfigLoader()
+        with pytest.raises(ConfigLoaderError, match="Configuration file not found"):
+            loader.load_single_config(str(non_existent_file))
     
     def test_invalid_yaml_syntax(self):
         """Test handling of files with invalid YAML syntax."""
@@ -398,12 +388,9 @@ event_config:
             f.write(invalid_yaml_content)
         
         # Act & Assert
-        # loader = ConfigLoader()
-        # with pytest.raises(ConfigLoaderError, match="Invalid YAML syntax"):
-        #     loader.load_single_config(str(config_file))
-        
-        # Placeholder assertion for test structure
-        assert config_file.exists()
+        loader = ConfigLoader()
+        with pytest.raises(ConfigLoaderError, match="Invalid YAML syntax"):
+            loader.load_single_config(str(config_file))
     
     def test_yaml_with_dangerous_content(self):
         """Test handling of YAML with potentially dangerous content."""
@@ -668,19 +655,17 @@ class TestConfigLoaderCaching:
             yaml.safe_dump(config_content, f)
         
         # Act
-        # loader = ConfigLoader(enable_cache=True)
-        # first_result = loader.load_single_config(str(config_file))
-        # cache_stats_before = loader.get_cache_stats()
-        # 
-        # second_result = loader.load_single_config(str(config_file))
-        # cache_stats_after = loader.get_cache_stats()
+        loader = ConfigLoader(enable_cache=True)
+        first_result = loader.load_single_config(str(config_file))
+        cache_stats_before = loader.get_cache_stats()
+        
+        second_result = loader.load_single_config(str(config_file))
+        cache_stats_after = loader.get_cache_stats()
         
         # Assert
-        # assert first_result.event_config.name == second_result.event_config.name
-        # assert cache_stats_after['hits'] > cache_stats_before['hits']
-        
-        # Placeholder assertion for test structure
-        assert config_file.exists()
+        assert first_result.event_config.name == second_result.event_config.name
+        assert cache_stats_after['hits'] > cache_stats_before['hits']
+        assert cache_stats_after['size'] == 1
     
     def test_cache_invalidation_on_file_modification(self):
         """Test that cache is invalidated when file is modified."""
